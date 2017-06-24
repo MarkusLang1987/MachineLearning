@@ -1,0 +1,72 @@
+---
+author: "Markus Lang"
+title: "Coursera Machine Learning"
+output: word_document
+---
+
+
+Background: 
+
+Using devices such as Jawbone Up, Nike FuelBand, and Fitbit it is now possible to collect a large amount of data about personal activity relatively inexpensively. These type of devices are part of the quantified self movement - a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. One thing that people regularly do is quantify how much of a particular activity they do, but they rarely quantify how well they do it. In this project, your goal will be to use data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants. They were asked to perform barbell lifts correctly and incorrectly in 5 different ways. More information is available from the website here: http://groupware.les.inf.puc-rio.br/har (see the section on the Weight Lifting Exercise Dataset).
+
+Goal:
+The goal of this analysis is to predict the variable "classe" with the relevant predictors.
+
+The first important step is to download the data and to preprocess it.
+
+
+
+
+```{r, echo=TRUE}
+library(dplyr); library(caret); library(readr); library(ggplot2); library(randomForest)
+
+if(!file.exists("./machlinelearning")){dir.create("./machlinelearning")}
+
+fileURLtrain <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-training.csv"
+fileURLtest <- "https://d396qusza40orc.cloudfront.net/predmachlearn/pml-testing.csv"
+
+path_rf <- file.path("./machlinelearning")
+files<-list.files(path_rf, recursive=TRUE)
+
+download.file(fileURLtrain,destfile="./machlinelearning/traindata.csv",method="curl")
+download.file(fileURLtest,destfile="./machlinelearning/testdata.csv",method="curl")
+
+training <- read_csv("~/machlinelearning/traindata.csv")
+validation <- read_csv("~/machlinelearning/testdata.csv")
+```
+
+The next step is to preprocess the data. For this i only keep the relevant variables and kick out Missings. 
+
+```{r, echo=TRUE}
+training <- training[, 6:ncol(training)]
+training  <- training[,which(colSums(is.na(training)) == 0)]
+
+inTrain <- createDataPartition(y = training$classe, p = 0.7,
+                               list=FALSE)
+
+traindata <- training[inTrain, ]
+testdata <- training[-inTrain, ]
+
+```
+
+In the next step i try to train the model with RandomForest and a Lineare Discriminant Analysis Model and compare them against each other.
+
+```{r, echo=TRUE}
+modFit1 <- train(classe ~ ., data=traindata, method="rf")
+modFit2 <- train(classe ~ ., data=traindata, method="lda")
+
+prediction1 <- predict(modFit1, newdata=testdata)
+prediction2 <- predict(modFit2, newdata=testdata)
+
+confusionMatrix(prediction1, testdata$classe)
+confusionMatrix(prediction2, testdata$classe)
+```
+
+The RandomForest model works absolutely great with great accuracy of 99,81%, so for me there was no reason to ensemble the model or use a different model.LDA works much worse with an accuracy of 65.88
+
+
+
+
+
+
+
